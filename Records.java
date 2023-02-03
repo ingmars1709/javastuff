@@ -15,6 +15,8 @@ public class Records {
 
         System.out.println("concat1 = " + r.concat(listOfStrings));
         System.out.println("concat2 = " + r.foldr(listOfStrings, String::concat, ""));
+
+        // TODO: calculator, compiler, dictaat
     }
 
     Integer sum(final AList<Integer> list) {
