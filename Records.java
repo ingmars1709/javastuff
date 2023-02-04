@@ -1,4 +1,8 @@
+import java.util.Objects;
 import java.util.function.BiFunction;
+import java.util.function.Function;
+
+import static java.util.function.Function.identity;
 
 public class Records {
     public static void main(String[] args) {
@@ -16,9 +20,16 @@ public class Records {
         System.out.println("concat1 = " + r.concat(listOfStrings));
         System.out.println("concat2 = " + r.foldr(listOfStrings, String::concat, ""));
 
-        // TODO: calculator, compiler, dictaat / parser combinators
-    }
+        var expr = new Add(
+                        new Mul(new Val(3), new Val(4)),
+                        new Val(7));
 
+        Integer calculate = r.eval(expr, Integer::sum, (i1, i2) -> i1 * i2, identity());
+        System.out.println("eval = " + calculate);
+
+        String prettyPrint = r.eval(expr, (i1, i2) -> i1 + "+" + i2, (i1, i2) -> i1 + "*" + i2, Objects::toString);
+        System.out.println("eval = " + prettyPrint);
+    }
     Integer sum(final AList<Integer> list) {
         switch (list) {
             case Cons<Integer> (Integer head, AList<Integer> tail) -> { return head + sum(tail); }
@@ -33,7 +44,6 @@ public class Records {
             default -> throw new IllegalStateException();
         }
     }
-
     String concat(final AList<String> list) {
         switch (list) {
             case Cons<String> (String head, AList<String> tail) -> { return head + concat(tail); }
@@ -41,13 +51,27 @@ public class Records {
             default -> throw new IllegalStateException();
         }
     }
-
     <T> T foldr(final AList<T> list, BiFunction<T, T, T> f, T base) {
         switch (list) {
             case Cons<T> (T head, AList<T> tail) -> { return f.apply(head, foldr(tail, f, base)); }
             case Nil<T> nil -> { return base; }
-
             // https://stackoverflow.com/questions/72703351/java-19-pattern-matching-compilation-error-the-switch-statement-does-not-cover
+            default -> throw new IllegalStateException();
+        }
+    }
+    <T> T eval(final Expr e, BiFunction<T, T, T> addF, BiFunction<T, T, T> mulF, Function<Integer, T> valF) {
+        switch (e) {
+            case Add (Expr e1, Expr e2) -> { return addF.apply(eval(e1, addF, mulF, valF), eval(e2, addF, mulF, valF)); }
+            case Mul (Expr e1, Expr e2) -> { return mulF.apply(eval(e1, addF, mulF, valF), eval(e2, addF, mulF, valF)); }
+            case Val v -> { return valF.apply(v.val); }
+            default -> throw new IllegalStateException();
+        }
+    }
+    Integer eval(final Expr e) {
+        switch (e) {
+            case Add (Expr e1, Expr e2) -> { return eval(e1) + eval(e2); }
+            case Mul (Expr e1, Expr e2) -> { return eval(e1) * eval(e2); }
+            case Val v -> { return (v.val); }
             default -> throw new IllegalStateException();
         }
     }
@@ -63,4 +87,9 @@ public class Records {
     sealed interface AList<T> permits Cons, Nil {}
     record Cons<T>(T head, AList<T> tail) implements AList<T> { }
     record Nil<T>() implements AList<T> { }
+
+    sealed interface Expr permits Add, Mul, Val {}
+    record Add(Expr e1, Expr e2) implements Expr {}
+    record Mul(Expr e1, Expr e2) implements Expr {}
+    record Val(Integer val) implements Expr {}
 }
