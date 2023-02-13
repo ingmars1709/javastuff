@@ -1,14 +1,17 @@
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.IntUnaryOperator;
 
 import static java.util.Arrays.asList;
 
 public class Records {
     public static void main(String[] args) {
-        AList<Integer> listOfInts = create(asList(1,2,3,4,5));
+        AList<Integer> ints = create(asList(1,2,3,4,5));
 
-        System.out.println("sum1 = " + sum(listOfInts));
-        System.out.println("mul1 = " + mul(listOfInts));
+        System.out.println("sum1 = " + sum(ints));
+        System.out.println("mul1 = " + mul(ints));
+        System.out.println("sum2 = " + foldr(ints, Integer::sum, 0));
+        System.out.println("mul2 = " + foldr(ints, (i1, i2) -> i1 * i2, 1));
 
         var expr = new Add(new Mul(new Val(3), new Val(4)),
                            new Add(new Val(8),
@@ -27,6 +30,8 @@ public class Records {
         System.out.println("calculate = " + transformedCalculated);
 
         System.out.println("pretty print = " + prettyprint(transformed));
+
+        System.out.println("take(3," + ints + ") = " + take(3, ints));
     }
 
     static <T> AList<T> create(List<T> list) {
@@ -40,6 +45,7 @@ public class Records {
             default -> throw new IllegalStateException();
         }
     }
+
     static Integer mul(AList<Integer> list) {
         switch (list) {
             case Cons<Integer> (Integer head, AList<Integer> tail) -> { return head * mul(tail); }
@@ -47,6 +53,15 @@ public class Records {
             default -> throw new IllegalStateException();
         }
     }
+
+    static <T> T foldr(AList<T> list, BiFunction<T,T,T> f, T base) {
+        switch (list) {
+            case Cons<T> (T head, AList<T> tail) -> { return f.apply(head, foldr(tail, f, base)); }
+            case Empty<T> empty -> { return base; }
+            default -> throw new IllegalStateException();
+        }
+    }
+
     static <T> AList<T> take(Integer n, AList<T> l) {
         switch (l) {
             case Cons<T> (T head, AList<T> tail) -> { return n == 0 ? new Empty<T>() : new Cons<T>(head, take (n-1, tail)); }
@@ -55,10 +70,8 @@ public class Records {
         }
     }
 
-    // foldr
-    // perms
-    // comprehensies
-
+    // perms or subs
+    // parser combinators
 
     static Integer calc(Expr e) {
         switch (e) {
@@ -94,11 +107,22 @@ public class Records {
     // pure functions
 
     sealed interface AList<T> permits Cons, Empty {}
-    record Cons<T>(T head, AList<T> tail) implements AList<T> { }
-    record Empty<T>() implements AList<T> { }
+    record Cons<T>(T head, AList<T> tail) implements AList<T> {
+        @Override
+        public String toString() {
+            return head + ":" + tail.toString();
+        }
+    }
+    record Empty<T>() implements AList<T> {
+        @Override
+        public String toString() {
+            return "[]";
+        }
+    }
 
     sealed interface Expr permits Add, Mul, Val {}
     record Add(Expr e1, Expr e2) implements Expr {}
     record Mul(Expr e1, Expr e2) implements Expr {}
     record Val(Integer val) implements Expr {}
+    record Tuple<A, B>(A a, B b) {}
 }
