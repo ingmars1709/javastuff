@@ -1,3 +1,5 @@
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.IntUnaryOperator;
@@ -6,12 +8,17 @@ import static java.util.Arrays.asList;
 
 public class Records {
     public static void main(String[] args) {
-        AList<Integer> ints = create(asList(1,2,3,4,5));
+        var list = asList(1, 2, 3, 4, 5);
+        var otherList = asList(8, 9, 10);
+        
+        AList<Integer> ints = create(list);
+        AList<Integer> otherInts = create(otherList);
 
         System.out.println("sum1 = " + sum(ints));
         System.out.println("mul1 = " + mul(ints));
         System.out.println("sum2 = " + foldr(ints, Integer::sum, 0));
         System.out.println("mul2 = " + foldr(ints, (i1, i2) -> i1 * i2, 1));
+        System.out.println("sum3 = " + sum(list));
 
         var expr = new Add(new Mul(new Val(3), new Val(4)),
                            new Add(new Val(8),
@@ -31,7 +38,9 @@ public class Records {
 
         System.out.println("pretty print = " + prettyprint(transformed));
 
-        System.out.println("take(3," + ints + ") = " + take(3, ints));
+        System.out.println("take(3, " + ints + ") = " + take(3, ints));
+
+        System.out.println("append(ints, otherInts) = " + append(ints, otherInts));
     }
 
     static <T> AList<T> create(List<T> list) {
@@ -44,6 +53,10 @@ public class Records {
             case Empty<Integer> empty -> { return 0; }
             default -> throw new IllegalStateException();
         }
+    }
+
+    static Integer sum(List<Integer> list) {
+        return list.isEmpty() ? 0 : list.get(0) + sum(list.subList(1, list.size()));
     }
 
     static Integer mul(AList<Integer> list) {
@@ -66,6 +79,14 @@ public class Records {
         switch (l) {
             case Cons<T> (T head, AList<T> tail) -> { return n == 0 ? new Empty<T>() : new Cons<T>(head, take (n-1, tail)); }
             case Empty<T> empty -> { return new Empty<>(); }
+            default -> throw new IllegalStateException();
+        }
+    }
+
+    static <T> AList<T> append(AList<T> l1, AList<T> l2) {
+        switch (l1) {
+            case Cons<T> (T head, AList<T> tail) -> { return new Cons<T>(head, append(tail, l2)); }
+            case Empty<T> empty -> { return l2; }
             default -> throw new IllegalStateException();
         }
     }
