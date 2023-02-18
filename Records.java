@@ -47,6 +47,7 @@ public class Records {
         System.out.println("sublists = " + sublists(ints));
 
         // TODO list comprehension
+        // TODO sorting
     }
 
     static <T> AList<T> from(List<T> list) {
