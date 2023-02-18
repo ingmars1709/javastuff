@@ -20,6 +20,11 @@ public class Records {
         AList<String> mappedToString = map(i -> "'" + i.toString() + "'", ints);
         System.out.println("mappedToString = " + mappedToString);
 
+        Function<Integer, Integer> addThree = partial(Integer::sum, 3);
+        AList<Integer> addThreeToAll = map(addThree, ints);
+        System.out.println("addThreeToAll = " + addThreeToAll);
+
+
         var expr = new Add(new Mul(new Val(3), new Val(4)),
                            new Add(new Val(8),
                                    new Mul(new Val(1), new Val(7)))
@@ -45,6 +50,7 @@ public class Records {
         System.out.println("to Java List: " + to);
 
         System.out.println("sublists = " + sublists(ints));
+
 
         // TODO list comprehension
         // TODO sorting
@@ -84,6 +90,10 @@ public class Records {
             case Empty<T> empty -> { return base; }
             default -> throw new IllegalStateException();
         }
+    }
+
+    static <A,B,C> Function<B, C> partial(BiFunction<A,B,C> f, A param) {
+        return i -> f.apply(param, i);
     }
 
     static <A,B> AList<B> map(Function<A,B> f, AList<A> list) {
@@ -180,5 +190,11 @@ public class Records {
     record Add(Expr e1, Expr e2) implements Expr {}
     record Mul(Expr e1, Expr e2) implements Expr {}
     record Val(Integer val) implements Expr {}
+
     record Tuple<A, B>(A a, B b) {}
+
+    sealed interface Tree<T> permits Bin, Leaf {}
+    record Leaf<T>(T value) implements Tree<T> {}
+    record Bin<T>(Tree<T> left, Tree<T> right) implements Tree<T> {}
+
 }
