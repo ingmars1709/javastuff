@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -26,28 +27,38 @@ public class Records {
 
         Integer calculate = calc(expr);
         System.out.println("calculate = " + calculate);
-
         String prettyPrint = prettyprint(expr);
         System.out.println("pretty print = " + prettyPrint);
 
         Expr transformed = transform(expr, i -> i * 2);
-
         Integer transformedCalculated = calc(transformed);
         System.out.println("calculate = " + transformedCalculated);
-
         System.out.println("pretty print = " + prettyprint(transformed));
 
         System.out.println("take(3, " + ints + ") = " + take(3, ints));
 
-        System.out.println("append(ints, otherInts) = " + append(ints, otherInts));
+        AList<Integer> appended = append(ints, otherInts);
+        System.out.println("append(ints, otherInts) = " + appended);
 
-        System.out.println("transformedCalculated = " + transformedCalculated);
+        List<Integer> to = new ArrayList<>();
+        project(appended, to);
+        System.out.println("to Java List: " + to);
 
         System.out.println("sublists = " + sublists(ints));
+
+        // TODO list comprehension
     }
 
     static <T> AList<T> from(List<T> list) {
         return list.isEmpty() ? new Empty<>() : new Cons<T>(list.get(0), from(list.subList(1, list.size())));
+    }
+
+    static <T> void project(AList<T> from, List<T> to) {
+        switch (from) {
+            case Cons<T> (T head, AList<T> tail) -> { to.add(head); project(tail, to); }
+            case Empty<T> empty -> { }
+            default -> throw new IllegalStateException();
+        }
     }
 
     static Integer sum(AList<Integer> list) {
@@ -92,7 +103,7 @@ public class Records {
 
     static <T> AList<T> append(AList<T> l1, AList<T> l2) {
         switch (l1) {
-            case Cons<T> (T head, AList<T> tail) -> { return new Cons<T>(head, append(tail, l2)); }
+            case Cons<T> (T head, AList<T> tail) -> { return new Cons<>(head, append(tail, l2)); }
             case Empty<T> empty -> { return l2; }
             default -> throw new IllegalStateException();
         }
