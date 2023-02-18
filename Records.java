@@ -1,24 +1,23 @@
-import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 
 import static java.util.Arrays.asList;
 
 public class Records {
     public static void main(String[] args) {
-        var list = asList(1, 2, 3, 4, 5);
-        var otherList = asList(8, 9, 10);
-        
-        AList<Integer> ints = create(list);
-        AList<Integer> otherInts = create(otherList);
+
+        AList<Integer> ints = from(asList(1, 2, 3, 4, 5));
+        AList<Integer> otherInts = from(asList(8, 9, 10));
 
         System.out.println("sum1 = " + sum(ints));
         System.out.println("mul1 = " + mul(ints));
         System.out.println("sum2 = " + foldr(ints, Integer::sum, 0));
         System.out.println("mul2 = " + foldr(ints, (i1, i2) -> i1 * i2, 1));
-        System.out.println("sum3 = " + sum(list));
+
+        AList<String> mappedToString = map(i -> "'" + i.toString() + "'", ints);
+        System.out.println("mappedToString = " + mappedToString);
 
         var expr = new Add(new Mul(new Val(3), new Val(4)),
                            new Add(new Val(8),
@@ -41,10 +40,14 @@ public class Records {
         System.out.println("take(3, " + ints + ") = " + take(3, ints));
 
         System.out.println("append(ints, otherInts) = " + append(ints, otherInts));
+
+        System.out.println("transformedCalculated = " + transformedCalculated);
+
+        System.out.println("sublists = " + sublists(ints));
     }
 
-    static <T> AList<T> create(List<T> list) {
-        return list.isEmpty() ? new Empty<>() : new Cons<T>(list.get(0), create(list.subList(1, list.size())));
+    static <T> AList<T> from(List<T> list) {
+        return list.isEmpty() ? new Empty<>() : new Cons<T>(list.get(0), from(list.subList(1, list.size())));
     }
 
     static Integer sum(AList<Integer> list) {
@@ -53,10 +56,6 @@ public class Records {
             case Empty<Integer> empty -> { return 0; }
             default -> throw new IllegalStateException();
         }
-    }
-
-    static Integer sum(List<Integer> list) {
-        return list.isEmpty() ? 0 : list.get(0) + sum(list.subList(1, list.size()));
     }
 
     static Integer mul(AList<Integer> list) {
@@ -71,6 +70,14 @@ public class Records {
         switch (list) {
             case Cons<T> (T head, AList<T> tail) -> { return f.apply(head, foldr(tail, f, base)); }
             case Empty<T> empty -> { return base; }
+            default -> throw new IllegalStateException();
+        }
+    }
+
+    static <A,B> AList<B> map(Function<A,B> f, AList<A> list) {
+        switch (list) {
+            case Cons<A> (A head, AList<A> tail) -> { return new Cons<>(f.apply(head), map(f, tail)); }
+            case Empty<A> empty -> { return new Empty<>(); }
             default -> throw new IllegalStateException();
         }
     }
@@ -91,8 +98,16 @@ public class Records {
         }
     }
 
-    // perms or subs
-    // parser combinators
+    static <T> AList<AList<T>> sublists(AList<T> list) {
+        switch (list) {
+            case Cons<T> (T head, AList<T> tail) -> {
+                var tailSubs = sublists(tail);
+                return append(map(l -> new Cons<>(head, l), tailSubs), tailSubs);
+            }
+            case Empty<T> empty -> { return new Cons<>(new Empty<>(), new Empty<>()); }
+            default -> throw new IllegalStateException();
+        }
+    }
 
     static Integer calc(Expr e) {
         switch (e) {
@@ -129,9 +144,17 @@ public class Records {
 
     sealed interface AList<T> permits Cons, Empty {}
     record Cons<T>(T head, AList<T> tail) implements AList<T> {
+        private String listToString(AList<T> list) {
+            switch(list) {
+                case Cons<T> (T h, Empty<T> l) -> { return h.toString(); }
+                case Cons<T> (T h, AList<T> l) -> {  return h + "," + listToString(l); }
+                case Empty<T> empty -> { return ""; }
+                default -> throw new IllegalStateException();
+            }
+        }
         @Override
         public String toString() {
-            return head + ":" + tail.toString();
+            return "[" + listToString(this) + "]";
         }
     }
     record Empty<T>() implements AList<T> {
